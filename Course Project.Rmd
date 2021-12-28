@@ -1,0 +1,137 @@
+---
+title: "Simulation of the Exponential Distribution and Analysis of the ToothGrowth Data Set"
+author: "Casey Sanders"
+date: "12/19/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+In this report simulations will be used to demonstrate the Central Limit Theorem on the exponential distribution. Also, the ToothGrowth data set from the R Datasets package will be analyzed to evaluate the effect of vitamin C on tooth growth in guinea pigs using various dosages and delivery methods.
+
+# The Central Limit Theorem applied to the exponential distribution
+
+## Simulation
+
+Two simulations were performed by calculating the mean of 3 and 40 random exponential distribution samples 1000 times using a $\lambda$ of 0.2. $\lambda$ represents the constant rate of events over time. A seed was set for future replication.
+
+## Analysis
+
+```{r main_sim, echo = FALSE, fig.show="hold", out.width="50%"}
+
+# simulation with n = 3
+set.seed(5)
+mns <- NULL
+vars <- NULL
+sample_size <- 3
+for (i in 1 : 1000){
+   sample <- (rexp(n = sample_size, rate = 0.2)) # n is changed from 40 to 5
+   mns <- c(mns, mean(sample))
+   vars <- c(vars, var(sample))
+}
+hist(mns, main = sprintf("Distribution of sample means, n = %i", sample_size), xlab = "mean")
+
+
+# simulation with n = 40
+mns <- NULL
+vars <- NULL
+sample_size = 40
+for (i in 1 : 1000){
+   sample <- (rexp(n = sample_size, rate = 0.2))
+   mns <- c(mns, mean(sample))
+   vars <- c(vars, var(sample))
+}
+hist(mns, main = sprintf("Distribution of sample means, n = %i", sample_size), xlab = "mean")
+```
+
+The Central Limit Theorem states that the distribution of means will be normal even if the sampled data is not normal. The distribution of sample means appears to be Gaussian, normality tests could be performed but they are out of scope of this report.
+
+The theoretical mean of an exponential distribution is $1/\lambda$, with $\lambda = 0.2$ the expected mean is $1/0.2 = 5$ which is observed in the above histogram and average sample mean.
+
+The theoretical variance of an exponential distribution is $1/\lambda^2$, with $\lambda = 0.2$ the expected variance is $1/0.2^2 = 25$, the average sample variance is below.
+``` {r, echo = FALSE}
+mean(vars)
+```
+
+The Central Limit Theorem also states that as the sample size increases, the distribution of sample means becomes more normal. This can be observed with the n = 3 simulation being less Gaussian than the n = 40 simulation.
+
+# ToothGrowth Data Set
+
+The ToothGrowth data set provided by the datasets package measures the amount of tooth growth (defined as length of odontoblasts) in 60 guinea pigs after receiving one of three vitamin C doses via one of two delivery methods.
+
+## Analysis
+
+A summary of the ToothGrowth data set is below.
+
+```{r, echo=FALSE}
+data("ToothGrowth")
+summary(ToothGrowth)
+```
+
+### Delivery Methods
+
+There were two delivery methods, absorbic acid ("VC") and orange juice ("OC"). A two sided two sample t test assuming unequal variances was performed. The null hypothesis is $\mu_{VC}=\mu_{OC}$ and the alternative hypothesis is $\mu_{VC}\neq\mu_{OC}$.
+
+```{r}
+t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = ToothGrowth, 
+       conf.level = 0.975)
+```
+
+With 95% confidence the the null hypothesis is not rejected because 0 is included in the confidence interval, meaning the delivery method has an insignificant effect. Although, the effect may be significant at the individual dose level (refer to Figure 1 in the Appendix).
+
+### Dose Levels
+
+To evaluate the effect of dose level on tooth growth a one sided two sample t test assuming unequal variances was performed. The null hypothesis is $\mu_{0.5}=\mu_{2}$ and the alternative hypothesis is $\mu_{0.5}<\mu_{2}$.
+
+```{r}
+ToothGrowth_2_dose <- subset(ToothGrowth, dose %in% c(0.5, 2)) 
+t.test(len ~ dose, paired = FALSE, var.equal = FALSE, data = ToothGrowth_2_dose, 
+       alternative = "less", conf.level = 0.95)
+```
+
+The p-value is very low, meaning the null hypothesis is rejected and there is a significant difference in tooth growth between a 0.5 mg/day dose and a 2 mg/day dose.
+
+# Conclusion
+
+The Central Limit Theorem is observed with the exponential distribution when calculating the mean with sample sizes ranging from 3 to 40. Also, with the ToothGrowth data set there was not a significant difference in tooth growth between the delivery methods. Although, the dose levels had a significant effect on tooth growth (P\<0.0001).
+
+# Appendix
+
+The simulation code is below.
+
+```{r, eval=FALSE}
+# simulation with n = 3
+set.seed(5)
+mns <- NULL
+vars <- NULL
+sample_size <- 3
+for (i in 1 : 1000){
+   sample <- (rexp(n = sample_size, rate = 0.2))
+   mns <- c(mns, mean(sample))
+   vars <- c(vars, var(sample))
+}
+hist(mns, main = sprintf("Distribution of sample means, n = %i", sample_size), xlab = "mean")
+
+
+# simulation with n = 40
+mns <- NULL
+vars <- NULL
+sample_size = 40
+for (i in 1 : 1000){
+   sample <- (rexp(n = sample_size, rate = 0.2))
+   mns <- c(mns, mean(sample))
+   vars <- c(vars, var(sample))
+}
+hist(mns, main = sprintf("Distribution of sample means, n = %i", sample_size), xlab = "mean")
+```
+
+```{r boxplot, echo=FALSE, fig.cap="\\label{fig:figs}Box plot different ", fig.height=4}
+boxplot(ToothGrowth$len ~ ToothGrowth$supp * ToothGrowth$dose, 
+        xlab = "Delivery Method and Dose Level", ylab = "Tooth Growth")
+```
